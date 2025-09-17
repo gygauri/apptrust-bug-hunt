@@ -1,0 +1,37 @@
+name: Init Environment
+on:
+  workflow_dispatch:
+    inputs:
+      active-environment:
+        description: "Environment"
+        required: true
+        type: environment
+  workflow_call:
+    inputs:
+      active-environment:
+        description: "Environment"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  cleanup-environment:
+    name: Cleanup Environment
+    runs-on: self-hosted
+    environment: ${{ github.event.inputs.active-environment }}
+    env:
+      JF_URL: ${{ vars.PLATFORM_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate OIDC token
+        uses: ./.github/actions/generate-oidc-token
+        with:
+          oidc-provider-url: ${{ env.JF_URL }}
+          oidc-provider-name: ${{ vars.OIDC_PROVIDER_NAME }}
+
+      - name: Ping RT
+        run: |
+          jf rt ping

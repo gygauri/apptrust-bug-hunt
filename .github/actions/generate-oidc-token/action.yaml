@@ -1,0 +1,38 @@
+name: Generate OIDC token
+description: Generate OIDC token (including application key scope)
+inputs:
+  oidc-provider-url:
+    description: 'OIDC provider URL'
+    required: true
+  oidc-provider-name:
+    description: 'OIDC provider name'
+    required: true
+  oidc-audience:
+    description: 'OIDC audience'
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Use JFrog CLI for authentication (OIDC)
+      id: auth-token-generation
+      uses: jfrog/setup-jfrog-cli@v4
+      env:
+        JF_URL: ${{ inputs.oidc-provider-url }}
+      with:
+        oidc-provider-name: ${{ inputs.oidc-provider-name }}
+        oidc-audience: ${{ inputs.oidc-audience }}
+
+    - name: Set outputs
+      shell: bash
+      run: |
+        if [ -z "${{ steps.auth-token-generation.outputs.oidc-user }}" ]; then
+          echo "OIDC user not found"
+          exit 1
+        fi
+        if [ -z "${{ steps.auth-token-generation.outputs.oidc-token }}" ]; then
+          echo "OIDC token not found"
+          exit 1
+        fi
+        echo "AUTH_USER=${{ steps.auth-token-generation.outputs.oidc-user }}" >> "$GITHUB_ENV"
+        echo "AUTH_TOKEN=${{ steps.auth-token-generation.outputs.oidc-token }}" >> "$GITHUB_ENV"
